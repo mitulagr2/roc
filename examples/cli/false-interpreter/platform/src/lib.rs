@@ -42,7 +42,7 @@ extern "C" {
     fn roc_main_size() -> i64;
 
     #[link_name = "roc__mainForHost_0_caller"]
-    fn call_Fx(flags: *const u8, closure_data: *const u8, output: *mut u8);
+    fn call_Fx(flags: *const u8, closure_data: *const u8, output: *mut RocResult<(), i64>);
 
     #[allow(dead_code)]
     #[link_name = "roc__mainForHost_0_size"]
@@ -133,7 +133,7 @@ pub unsafe extern "C" fn roc_shm_open(
 }
 
 #[no_mangle]
-pub extern "C" fn rust_main() -> i32 {
+pub extern "C" fn rust_main() -> i64 {
     let arg = env::args()
         .nth(1)
         .expect("Please pass a .false file as a command-line argument to the false interpreter!");
@@ -163,17 +163,21 @@ pub extern "C" fn rust_main() -> i32 {
 
 unsafe fn call_the_closure(closure_data_ptr: *const u8) -> i64 {
     let size = size_Fx_result() as usize;
-    let buffer = roc_alloc(size, 1) as *mut u8;
+
+    // Main always returns an i64. just allocate for that.
+    let mut out: RocResult<(), i64> = RocResult::ok(());
 
     call_Fx(
         // This flags pointer will never get dereferenced
         MaybeUninit::uninit().as_ptr(),
         closure_data_ptr as *const u8,
-        buffer as *mut u8,
+        &mut out,
     );
 
-    roc_dealloc(buffer as _, 1);
-    0
+    match out.into() {
+        Ok(()) => 0,
+        Err(exit_code) => exit_code,
+    }
 }
 
 #[no_mangle]

@@ -20,10 +20,14 @@ import Variable exposing [Variable]
 # I assume all of the Task.awaits are the cause of this, but I am not 100% sure.
 InterpreterErrors : [BadUtf8, DivByZero, EmptyStack, InvalidBooleanValue, InvalidChar Str, MaxInputNumber, NoLambdaOnStack, NoNumberOnStack, NoVariableOnStack, NoScope, OutOfBounds, UnexpectedEndOfData]
 
-main : Str -> Task {} {}
+main : Str -> Task {} I64
 main = \filename ->
-    interpretFile filename
-    |> Task.onErr \StringErr e -> Stdout.line "Ran into problem:\n$(e)\n"
+    interpretFile filename |> Task.onErr \StringErr e ->
+
+        Stdout.line! "Ran into problem:\n$(e)\n"
+
+        # non-zero exit code
+        Task.err 1
 
 interpretFile : Str -> Task {} [StringErr Str]
 interpretFile = \filename ->

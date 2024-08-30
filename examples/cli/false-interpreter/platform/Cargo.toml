@@ -19,6 +19,7 @@ path = "src/main.rs"
 [dependencies]
 libc = "0.2"
 roc_std = { path = "../../../../crates/roc_std" }
+roc_threadsafe_heap = { path = "../../../../crates/roc_threadsafe_heap" }
 memmap2 = "=0.9.4"
 
 [workspace]

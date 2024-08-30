@@ -2,21 +2,15 @@
 
 use core::ffi::c_void;
 use core::mem::MaybeUninit;
-use heap::ThreadSafeRefcountedResourceHeap;
 use libc;
 use roc_std::{RocBox, RocList, RocResult, RocStr};
+use roc_threadsafe_heap::ThreadSafeRefcountedResourceHeap;
 use std::env;
 use std::ffi::CStr;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::os::raw::c_char;
 use std::sync::OnceLock;
-
-/// Implementation of the host.
-/// The host contains code that calls the Roc main function and provides the
-/// Roc app with functions to allocate memory and execute effects such as
-/// writing to stdio or making HTTP requests.
-mod heap;
 
 thread_local! {
     static HEAP: MaybeUninit<ThreadSafeRefcountedResourceHeap<RocStr>> = MaybeUninit::uninit();
@@ -263,7 +257,7 @@ pub extern "C" fn roc_fx_openFile(name: &RocStr) -> RocResult<RocBox<()>, ()> {
             let alloc_result = heap.alloc_for(BufReader::new(f));
             match alloc_result {
                 Ok(alloc) => {
-                    return RocResult::ok(alloc);
+                    return dbg!(RocResult::ok(alloc));
                 }
                 Err(_) => {
                     panic!("Failed to allocate memory for file reader");

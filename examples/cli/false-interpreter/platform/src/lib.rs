@@ -2,13 +2,37 @@
 
 use core::ffi::c_void;
 use core::mem::MaybeUninit;
+use heap::ThreadSafeRefcountedResourceHeap;
 use libc;
-use roc_std::{RocList, RocResult, RocStr};
+use roc_std::{RocBox, RocList, RocResult, RocStr};
 use std::env;
 use std::ffi::CStr;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::os::raw::c_char;
+use std::sync::OnceLock;
+
+/// Implementation of the host.
+/// The host contains code that calls the Roc main function and provides the
+/// Roc app with functions to allocate memory and execute effects such as
+/// writing to stdio or making HTTP requests.
+mod heap;
+
+thread_local! {
+    static HEAP: MaybeUninit<ThreadSafeRefcountedResourceHeap<RocStr>> = MaybeUninit::uninit();
+}
+
+fn file_heap() -> &'static ThreadSafeRefcountedResourceHeap<BufReader<File>> {
+    static HEAP: OnceLock<ThreadSafeRefcountedResourceHeap<BufReader<File>>> = OnceLock::new();
+    HEAP.get_or_init(|| {
+        let DEFAULT_MAX_FILES = 65536;
+        let max_files = env::var("MAX_FILES")
+            .map(|v| v.parse().unwrap_or(DEFAULT_MAX_FILES))
+            .unwrap_or(DEFAULT_MAX_FILES);
+        ThreadSafeRefcountedResourceHeap::new(max_files)
+            .expect("Failed to allocate mmap for file handle references.")
+    })
+}
 
 extern "C" {
     #[link_name = "roc__mainForHost_1_exposed_generic"]
@@ -45,11 +69,18 @@ pub unsafe extern "C" fn roc_realloc(
 
 #[no_mangle]
 pub unsafe extern "C" fn roc_dealloc(c_ptr: *mut c_void, _alignment: u32) {
+    let heap = file_heap();
+    if heap.in_range(c_ptr) {
+        heap.dealloc(c_ptr);
+        return;
+    }
+
     libc::free(c_ptr)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn roc_panic(msg: *mut RocStr, tag_id: u32) {
+    dbg!(&format!("Panic: {}", &*msg));
     match tag_id {
         0 => {
             eprintln!("Roc standard library hit a panic: {}", &*msg);
@@ -220,13 +251,20 @@ pub extern "C" fn roc_fx_closeFile(br_ptr: *mut BufReader<File>) -> RocResult<()
 }
 
 #[no_mangle]
-pub extern "C" fn roc_fx_openFile(name: &RocStr) -> RocResult<*mut BufReader<File>, ()> {
+pub extern "C" fn roc_fx_openFile(name: &RocStr) -> RocResult<RocBox<()>, ()> {
     let string = name.as_str();
-    match File::open(string) {
+    match dbg!(File::open(string)) {
         Ok(f) => {
-            let br = BufReader::new(f);
-
-            RocResult::ok(Box::into_raw(Box::new(br)))
+            let heap = file_heap();
+            let alloc_result = heap.alloc_for(BufReader::new(f));
+            match alloc_result {
+                Ok(alloc) => {
+                    return RocResult::ok(alloc);
+                }
+                Err(_) => {
+                    panic!("Failed to allocate memory for file reader");
+                }
+            }
         }
         Err(_) => {
             panic!("unable to open file {:?}", name)

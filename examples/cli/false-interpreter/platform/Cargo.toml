@@ -19,5 +19,6 @@ path = "src/main.rs"
 [dependencies]
 libc = "0.2"
 roc_std = { path = "../../../../crates/roc_std" }
+memmap2 = "=0.9.4"
 
 [workspace]

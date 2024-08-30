@@ -20,7 +20,7 @@ import Variable exposing [Variable]
 # I assume all of the Task.awaits are the cause of this, but I am not 100% sure.
 InterpreterErrors : [BadUtf8, DivByZero, EmptyStack, InvalidBooleanValue, InvalidChar Str, MaxInputNumber, NoLambdaOnStack, NoNumberOnStack, NoVariableOnStack, NoScope, OutOfBounds, UnexpectedEndOfData]
 
-main : Str -> Task {} []
+main : Str -> Task {} {}
 main = \filename ->
     interpretFile filename
     |> Task.onErr \StringErr e -> Stdout.line "Ran into problem:\n$(e)\n"
@@ -492,7 +492,7 @@ stepExecCtx = \ctx, char ->
 
         0x5E ->
             # `^` read char as int
-            in = Stdin.char!
+            in = Stdin.char! {}
             if in == 255 then
                 # max char sent on EOF. Change to -1
                 Task.ok (Context.pushStack ctx (Number -1))

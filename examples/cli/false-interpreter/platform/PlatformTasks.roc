@@ -1,16 +1,18 @@
 hosted PlatformTasks
-    exposes [openFile, closeFile, withFileOpen, getFileLine, getFileBytes, putLine, putRaw, getLine, getChar]
+    exposes [FileHandle, openFile, closeFile, withFileOpen, getFileLine, getFileBytes, putLine, putRaw, getLine, getChar]
     imports []
 
-openFile : Str -> Task U64 {}
+FileHandle := Box {}
 
-closeFile : U64 -> Task {} {}
+openFile : Str -> Task FileHandle {}
 
-withFileOpen : Str, (U64 -> Task ok err) -> Task {} {}
+closeFile : FileHandle -> Task {} {}
 
-getFileLine : U64 -> Task Str {}
+withFileOpen : Str, (FileHandle -> Task ok err) -> Task {} {}
 
-getFileBytes : U64 -> Task (List U8) {}
+getFileLine : FileHandle -> Task Str {}
+
+getFileBytes : FileHandle -> Task (List U8) {}
 
 putLine : Str -> Task {} {}
 

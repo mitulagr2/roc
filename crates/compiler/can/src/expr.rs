@@ -400,7 +400,7 @@ pub struct ClosureData {
     pub function_type: Variable,
     pub closure_type: Variable,
     pub return_type: Variable,
-    pub effect_type: Variable,
+    pub fx_type: Variable,
     pub name: Symbol,
     pub captured_symbols: Vec<(Symbol, Variable)>,
     pub recursive: Recursive,
@@ -477,7 +477,7 @@ impl StructAccessorData {
             function_type: function_var,
             closure_type: closure_var,
             return_type: field_var,
-            effect_type: Variable::PURE,
+            fx_type: Variable::PURE,
             name,
             captured_symbols: vec![],
             recursive: Recursive::NotRecursive,
@@ -551,7 +551,7 @@ impl OpaqueWrapFunctionData {
             function_type: function_var,
             closure_type: closure_var,
             return_type: opaque_var,
-            effect_type: Variable::PURE,
+            fx_type: Variable::PURE,
             name: function_name,
             captured_symbols: vec![],
             recursive: Recursive::NotRecursive,
@@ -1628,7 +1628,7 @@ fn canonicalize_closure_body<'a>(
         function_type: var_store.fresh(),
         closure_type: var_store.fresh(),
         return_type: var_store.fresh(),
-        effect_type: var_store.fresh(),
+        fx_type: var_store.fresh(),
         name: symbol,
         captured_symbols,
         recursive: Recursive::NotRecursive,
@@ -2257,7 +2257,7 @@ pub fn inline_calls(var_store: &mut VarStore, expr: Expr) -> Expr {
             function_type,
             closure_type,
             return_type,
-            effect_type,
+            fx_type: effect_type,
             recursive,
             name,
             captured_symbols,
@@ -2274,7 +2274,7 @@ pub fn inline_calls(var_store: &mut VarStore, expr: Expr) -> Expr {
                 function_type,
                 closure_type,
                 return_type,
-                effect_type,
+                fx_type: effect_type,
                 recursive,
                 name,
                 captured_symbols,
@@ -2847,6 +2847,7 @@ impl Declarations {
         let function_def = FunctionDef {
             closure_type: loc_closure_data.value.closure_type,
             return_type: loc_closure_data.value.return_type,
+            fx_type: loc_closure_data.value.fx_type,
             captured_symbols: loc_closure_data.value.captured_symbols,
             arguments: loc_closure_data.value.arguments,
         };
@@ -2898,6 +2899,7 @@ impl Declarations {
         let function_def = FunctionDef {
             closure_type: loc_closure_data.value.closure_type,
             return_type: loc_closure_data.value.return_type,
+            fx_type: loc_closure_data.value.fx_type,
             captured_symbols: loc_closure_data.value.captured_symbols,
             arguments: loc_closure_data.value.arguments,
         };
@@ -3078,6 +3080,7 @@ impl Declarations {
                 let function_def = FunctionDef {
                     closure_type: closure_data.closure_type,
                     return_type: closure_data.return_type,
+                    fx_type: closure_data.fx_type,
                     captured_symbols: closure_data.captured_symbols,
                     arguments: closure_data.arguments,
                 };
@@ -3118,7 +3121,7 @@ impl Declarations {
                     function_type: var_store.fresh(),
                     closure_type: var_store.fresh(),
                     return_type: var_store.fresh(),
-                    effect_type: var_store.fresh(),
+                    fx_type: var_store.fresh(),
                     name: self.symbols[index].value,
                     captured_symbols: vec![],
                     recursive: Recursive::NotRecursive,
@@ -3131,6 +3134,7 @@ impl Declarations {
                 let function_def = FunctionDef {
                     closure_type: loc_closure_data.value.closure_type,
                     return_type: loc_closure_data.value.return_type,
+                    fx_type: loc_closure_data.value.fx_type,
                     captured_symbols: loc_closure_data.value.captured_symbols,
                     arguments: loc_closure_data.value.arguments,
                 };
@@ -3265,6 +3269,7 @@ impl DeclarationTag {
 pub struct FunctionDef {
     pub closure_type: Variable,
     pub return_type: Variable,
+    pub fx_type: Variable,
     pub captured_symbols: Vec<(Symbol, Variable)>,
     pub arguments: Vec<(Variable, AnnotatedMark, Loc<Pattern>)>,
 }

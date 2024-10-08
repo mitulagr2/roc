@@ -10151,6 +10151,7 @@ fn find_lambda_sets_help(
                 }
             }
             Content::ErasedLambda => {}
+            Content::Pure | Content::Effectful => {}
         }
     }
 

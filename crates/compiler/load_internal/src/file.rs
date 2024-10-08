@@ -4388,7 +4388,12 @@ fn synth_list_len_type(subs: &mut Subs) -> Variable {
     let fn_args_slice = SubsSlice::extend_new(&mut subs.variables, [list_a]);
     subs.set_content(
         fn_var,
-        Content::Structure(FlatType::Func(fn_args_slice, clos_list_len, Variable::U64)),
+        Content::Structure(FlatType::Func(
+            fn_args_slice,
+            clos_list_len,
+            Variable::U64,
+            Variable::PURE,
+        )),
     );
     fn_var
 }

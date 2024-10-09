@@ -420,6 +420,9 @@ pub enum TypeTag {
     RecursiveTagUnion(Variable, UnionTags, ExtImplicitOpenness),
     Record(RecordFields),
     Tuple(TupleElems),
+    // A function fx type
+    Pure,
+    Effectful,
 }
 
 /// Look-aside slice of types used in [Types], when the slice does not correspond to the direct
@@ -1004,6 +1007,8 @@ impl Types {
                 self.set_type_tag(index, TypeTag::RangedNumber(*range), Slice::default())
             }
             Type::Error => self.set_type_tag(index, TypeTag::Error, Slice::default()),
+            Type::Pure => self.set_type_tag(index, TypeTag::Pure, Slice::default()),
+            Type::Effectful => self.set_type_tag(index, TypeTag::Effectful, Slice::default()),
         }
     }
 
@@ -1256,6 +1261,8 @@ impl Types {
                 }
                 RangedNumber(range) => (RangedNumber(range), Default::default()),
                 Error => (Error, Default::default()),
+                Pure => (Pure, Default::default()),
+                Effectful => (Effectful, Default::default()),
             };
 
             self.set_type_tag(dest_index, tag, args);
@@ -1465,6 +1472,8 @@ mod debug_types {
                         .align(),
                 )
             }
+            TypeTag::Pure => f.text("Pure"),
+            TypeTag::Effectful => f.text("Effectful"),
         };
         group.group()
     }
@@ -1692,6 +1701,9 @@ pub enum Type {
     Apply(Symbol, Vec<Loc<Type>>, Region),
     Variable(Variable),
     RangedNumber(NumericRange),
+    /// A function's fx type
+    Pure,
+    Effectful,
     /// A type error, which will code gen to a runtime error
     Error,
 }
@@ -1780,6 +1792,8 @@ impl Clone for Type {
             Self::Variable(arg0) => Self::Variable(*arg0),
             Self::RangedNumber(arg1) => Self::RangedNumber(*arg1),
             Self::Error => Self::Error,
+            Type::Pure => Self::Pure,
+            Type::Effectful => Self::Effectful,
         }
     }
 }
@@ -2144,6 +2158,8 @@ impl fmt::Debug for Type {
             Type::UnspecializedLambdaSet { unspecialized } => {
                 write!(f, "{unspecialized:?}")
             }
+            Type::Pure => write!(f, "->"),
+            Type::Effectful => write!(f, "=>"),
         }
     }
 }
@@ -2307,7 +2323,7 @@ impl Type {
                     );
                 }
 
-                EmptyRec | EmptyTagUnion | Error => {}
+                EmptyRec | EmptyTagUnion | Error | Pure | Effectful => {}
             }
         }
     }
@@ -2430,7 +2446,7 @@ impl Type {
                     );
                 }
 
-                EmptyRec | EmptyTagUnion | Error => {}
+                EmptyRec | EmptyTagUnion | Error | Pure | Effectful => {}
             }
         }
     }
@@ -2546,7 +2562,13 @@ impl Type {
             }
             RangedNumber(_) => Ok(()),
             UnspecializedLambdaSet { .. } => Ok(()),
-            EmptyRec | EmptyTagUnion | ClosureTag { .. } | Error | Variable(_) => Ok(()),
+            EmptyRec
+            | EmptyTagUnion
+            | ClosureTag { .. }
+            | Error
+            | Variable(_)
+            | Pure
+            | Effectful => Ok(()),
         }
     }
 
@@ -2609,7 +2631,13 @@ impl Type {
             UnspecializedLambdaSet {
                 unspecialized: Uls(_, sym, _),
             } => *sym == rep_symbol,
-            EmptyRec | EmptyTagUnion | ClosureTag { .. } | Error | Variable(_) => false,
+            EmptyRec
+            | EmptyTagUnion
+            | ClosureTag { .. }
+            | Error
+            | Variable(_)
+            | Pure
+            | Effectful => false,
         }
     }
 
@@ -2671,7 +2699,7 @@ impl Type {
                 .iter()
                 .any(|arg| arg.value.contains_variable(rep_variable)),
             RangedNumber(_) => false,
-            EmptyRec | EmptyTagUnion | Error => false,
+            EmptyRec | EmptyTagUnion | Error | Pure | Effectful => false,
         }
     }
 
@@ -2980,7 +3008,7 @@ fn instantiate_aliases<'a, F>(
         }
         RangedNumber(_) => {}
         UnspecializedLambdaSet { .. } => {}
-        EmptyRec | EmptyTagUnion | ClosureTag { .. } | Error | Variable(_) => {}
+        EmptyRec | EmptyTagUnion | ClosureTag { .. } | Error | Variable(_) | Pure | Effectful => {}
     }
 }
 
@@ -3042,7 +3070,13 @@ fn symbols_help(initial: &Type) -> Vec<Symbol> {
             } => {
                 // ignore the member symbol because unspecialized lambda sets are internal-only
             }
-            EmptyRec | EmptyTagUnion | ClosureTag { .. } | Error | Variable(_) => {}
+            EmptyRec
+            | EmptyTagUnion
+            | ClosureTag { .. }
+            | Error
+            | Variable(_)
+            | Pure
+            | Effectful => {}
         }
     }
 
@@ -3164,6 +3198,7 @@ fn variables_help(tipe: &Type, accum: &mut ImSet<Variable>) {
                 variables_help(&x.value, accum);
             }
         }
+        Pure | Effectful => {}
     }
 }
 
@@ -3307,6 +3342,7 @@ fn variables_help_detailed(tipe: &Type, accum: &mut VariableDetail) {
                 variables_help_detailed(&x.value, accum);
             }
         }
+        Pure | Effectful => {}
     }
 }
 
@@ -4500,6 +4536,7 @@ fn instantiate_lambda_sets_as_unspecialized(
             Type::Variable(_) => {}
             Type::RangedNumber(_) => {}
             Type::Error => {}
+            Type::Pure | Type::Effectful => {}
         }
     }
 }

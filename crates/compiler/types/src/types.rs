@@ -3447,6 +3447,8 @@ pub enum Reason {
         foreign_symbol: ForeignSymbol,
         arg_index: HumanIndex,
     },
+    CallInFunction(Option<Region>),
+    CallInTopLevelDef,
     FloatLiteral,
     IntLiteral,
     NumLiteral,

@@ -14387,37 +14387,34 @@ All branches in an `if` must have the same type!
     "#
     );
 
-    // TODO: add the following tests after built-in Tasks are added
-    // https://github.com/roc-lang/roc/pull/6836
+    test_report!(
+        leftover_statement,
+        indoc!(
+            r#"
+            app [main] { pf: platform "../../../../../examples/cli/effects-platform/main.roc" }
 
-    // test_report!(
-    // suffixed_stmt_invalid_type,
-    //     indoc!(
-    //         r###"
-    //         app "test" provides [main] to "./platform"
+            import pf.Effect
 
-    //         main : Task U64 _ -> _
-    //         main = \task ->
-    //             task!
-    //             42
-    //         "###
-    //     ),
-    //     @r""
-    // );
+            main = \{} ->
+                identity {}
 
-    // test_report!(
-    // suffixed_expr_invalid_type,
-    //     indoc!(
-    //         r###"
-    //         app "test" provides [main] to "./platform"
+                Effect.putLine! "hello"
 
-    //         main : Task U64 _ -> _
-    //         main = \task ->
-    //             result : U32
-    //             result = task!
-    //             result
-    //         "###
-    //     ),
-    //     @r""
-    // );
+            identity = \x -> x
+            "#
+        ),
+        @r###"
+    ── LEFTOVER STATEMENT in /code/proj/Main.roc ───────────────────────────────────
+
+    This statement does not produce any effects:
+
+    6│      identity {}
+            ^^^^^^^^^^^
+
+    Standalone statements are only useful if they call effectful
+    functions.
+
+    Did you forget to use its result? If not, feel free to remove it.
+    "###
+    );
 }

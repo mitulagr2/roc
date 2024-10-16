@@ -1,7 +1,7 @@
 use crate::abilities::SpecializationId;
 use crate::annotation::{freshen_opaque_def, IntroducedVariables};
 use crate::builtins::builtin_defs_map;
-use crate::def::{can_defs_with_return, Annotation, Def};
+use crate::def::{can_defs_with_return, Annotation, Def, DefKind};
 use crate::env::Env;
 use crate::num::{
     finish_parsing_base, finish_parsing_float, finish_parsing_num, float_expr_from_result,
@@ -2224,6 +2224,7 @@ pub fn inline_calls(var_store: &mut VarStore, expr: Expr) -> Expr {
                     expr_var: def.expr_var,
                     pattern_vars: def.pattern_vars,
                     annotation: def.annotation,
+                    kind: def.kind,
                 });
             }
 
@@ -2245,6 +2246,7 @@ pub fn inline_calls(var_store: &mut VarStore, expr: Expr) -> Expr {
                 expr_var: def.expr_var,
                 pattern_vars: def.pattern_vars,
                 annotation: def.annotation,
+                kind: def.kind,
             };
 
             let loc_expr = Loc {
@@ -2432,6 +2434,7 @@ pub fn inline_calls(var_store: &mut VarStore, expr: Expr) -> Expr {
                                     expr_var,
                                     pattern_vars,
                                     annotation: None,
+                                    kind: DefKind::Let,
                                 };
 
                                 loc_answer = Loc {
